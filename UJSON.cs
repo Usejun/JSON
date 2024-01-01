@@ -1,9 +1,4 @@
-using System;
-using System.Text;
-using System.Linq;
-using System.Collections.Generic;
-
-namespace UJSON
+public class TT
 {
     public enum JType
     {
@@ -18,7 +13,7 @@ namespace UJSON
     public enum JAccess
     {
         Immutable,
-        OnlyValue,
+        Value,
         All
     }
 
@@ -99,7 +94,7 @@ namespace UJSON
             private JNumber ParseNumber(string _key)
             {
                 int start = index;
-                if (json[start] == '-') index++; 
+                if (json[start] == '-') index++;
                 while (char.IsDigit(json[index]) || json[index] == '.') index++;
 
                 string numberString = json.Substring(start, index - start);
@@ -221,16 +216,12 @@ namespace UJSON
             get
             {
                 if (type == JType.Object && key is string strKey)
-                {
                     foreach (JObject jObj in values)
                         if (jObj.key == strKey)
                             return jObj;
 
-                    throw new JSONIndexingException("It's not a key to existence");
-                }
-                else if (type == JType.Array && key is int intKey)
-                    if (this is JArray jArray)
-                        return jArray[intKey];
+                if (type == JType.Array && this is JArray jArray && key is int intKey)
+                    return jArray[intKey];
 
                 throw new JSONIndexingException("It's not Indexable type");
 
@@ -241,26 +232,18 @@ namespace UJSON
 
                 if (type == JType.Object && key is string strKey)
                 {
-                    for (int i = 0; i < values.Count; i++)
-                    {
-                        if (values[i].key == strKey)
-                        {
-                            values[i].Update(value);
-                            return;
-                        }
-                    }
+                    int index = FindKey(strKey);
 
-                    if (access == JAccess.All)
-                        values.Add(value);
-
+                    if (index == -1 && access == JAccess.All)
+                        Add(strKey, value);
+                    else if (index != -1)
+                        Update(strKey, value);
+                }
+                else if (type == JType.Array && this is JArray jArray && key is int intKey)
+                {
+                    jArray[intKey] = value;
                     return;
                 }
-                else if (type == JType.Array && key is int intKey)
-                    if ((access == JAccess.OnlyValue || access == JAccess.All) && this is JArray jArray)
-                    {
-                        jArray[intKey] = value;
-                        return;
-                    }
 
                 throw new JSONIndexingException("It's not Indexable type");
             }
@@ -268,7 +251,7 @@ namespace UJSON
 
         public virtual JObject Add(object value)
         {
-            if (access != JAccess.All) throw new JSONAccessException("It's is not All Access");
+            if (access == JAccess.Immutable) throw new JSONAccessException("It's is Immutable");
 
             if (type == JType.Array && this is JArray jArray)
                 jArray.Add(value);
@@ -279,39 +262,46 @@ namespace UJSON
         public JObject Add(string key, object value)
         {
             if (access != JAccess.All) throw new JSONAccessException("It's is not All Access");
+            if (type != JType.Object) throw new JSONTypeException("Unable to add.");
 
-            if (type != JType.Object) return this;
+            int index = FindKey(key);
 
-            var kl = values.Select(i => i.Key).ToArray();
-            foreach (var k in kl)
-                if (k == key)
-                {
-                    this[key].Update(value);
-                    return this;
-                }
-
-            if (value is double d)
-                values.Add(new JNumber(key, d, access));
-            else if (value is int i)
-                values.Add(new JNumber(key, i, access));
-            else if (value is long l)
-                values.Add(new JNumber(key, l, access));
-            else if (value is float f)
-                values.Add(new JNumber(key, f, access));
-            else if (value is string s)
-                values.Add(new JString(key, s, access));
-            else if (value is bool b)
-                values.Add(new JBoolean(key, b, access));
-            else if (value is null)
-                values.Add(new JNull(key, access));
-            else if (value is List<JObject> li)
-                values.Add(new JArray(key, li, access));
-            else if (value is JObject j)
-                values.Add(j);
+            if (index != -1)
+                Update(key, value);
             else
-                AddObject(key);
-
-
+            {
+                switch (value)
+                {
+                    case int i:
+                        values.Add(new JNumber(key, i, access));
+                        break;
+                    case long l:
+                        values.Add(new JNumber(key, l, access));
+                        break;
+                    case float f:
+                        values.Add(new JNumber(key, f, access));
+                        break;
+                    case double d:
+                        values.Add(new JNumber(key, d, access));
+                        break;
+                    case string s:
+                        values.Add(new JString(key, s, access));
+                        break;
+                    case bool b:
+                        values.Add(new JBoolean(key, b, access));
+                        break;
+                    case null:
+                        values.Add(new JNull(key, access));
+                        break;
+                    case List<JObject> li:
+                        values.Add(new JArray(key, li, access));
+                        break;
+                    case JObject j:
+                        values.Add(j);
+                        break;
+                    default: throw new JSONTypeException("The type is not allowed.");
+                }
+            }
             return this;
         }
 
@@ -319,14 +309,11 @@ namespace UJSON
         {
             if (access != JAccess.All) throw new JSONAccessException("It's is not All Access");
 
-            for (int i = 0; i < values.Count; i++)
-            {
-                if (values[i].key == key)
-                {
-                    values.RemoveAt(i);
-                    return this;
-                }
-            }
+            int index = FindKey(key);
+
+            if (index == -1)
+
+                values.RemoveAt(index);
 
             return this;
         }
@@ -340,16 +327,16 @@ namespace UJSON
             return this;
         }
 
-        public JObject AddObject(string key, params (string key, object value)[] _values)
+        public JObject AddObject(string key, params (string key, object value)[] values)
         {
             if (access != JAccess.All) throw new JSONAccessException("It's is not All Access");
 
             JObject jObject = new JObject(key, access);
 
-            foreach ((string _key, object value) in _values)
-                jObject.Add(_key, value);
+            foreach (var data in values)
+                jObject.Add(data.key, data.value);
 
-            values.Add(jObject);
+            this.values.Add(jObject);
 
             return this;
         }
@@ -358,21 +345,21 @@ namespace UJSON
         {
             if (access != JAccess.All) throw new JSONAccessException("It's is not All Access");
 
-            values.Add(new JArray(key: key, access: access));
+            values.Add(new JArray(key, access));
 
             return this;
         }
 
-        public JObject AddArray(string key, params object[] valuse)
+        public JObject AddArray(string key, params object[] values)
         {
             if (access != JAccess.All) throw new JSONAccessException("It's is not All Access");
 
             JArray jArray = new JArray(key, access);
 
-            foreach (object value in valuse)
+            foreach (object value in values)
                 jArray.Add(value);
 
-            values.Add(jArray);
+            this.values.Add(jArray);
 
             return this;
         }
@@ -380,9 +367,7 @@ namespace UJSON
         public JObject Update(string key, object value)
         {
             if (access == JAccess.Immutable) throw new JSONAccessException("it's immutable");
-
-            if (type != JType.Object)
-                return this;
+            if (type != JType.Object) this[key].Update(value);
 
             switch (value)
             {
@@ -524,67 +509,67 @@ namespace UJSON
 
         public static implicit operator int(JObject jObject)
         {
-            if (jObject.type == JType.Number)
-                if (jObject is JNumber jNumber)
-                    return (int)jNumber;
+            if (jObject.type == JType.Number && jObject is JNumber jNumber)
+                return (int)jNumber;
 
             throw new JSONConvertException("Not number type");
         }
 
         public static implicit operator long(JObject jObject)
         {
-            if (jObject.type == JType.Number)
-                if (jObject is JNumber jNumber)
-                    return (long)jNumber;
+            if (jObject.type == JType.Number && jObject is JNumber jNumber)
+                return (long)jNumber;
 
             throw new JSONConvertException("Not number type");
         }
 
         public static implicit operator float(JObject jObject)
         {
-            if (jObject.type == JType.Number)
-                if (jObject is JNumber jNumber)
-                    return (float)jNumber;
+            if (jObject.type == JType.Number && jObject is JNumber jNumber)
+                return (float)jNumber;
 
             throw new JSONConvertException("Not number type");
         }
 
         public static implicit operator double(JObject jObject)
         {
-            if (jObject.type == JType.Number)
-                if (jObject is JNumber jNumber)
-                    return (double)jNumber;
+            if (jObject.type == JType.Number && jObject is JNumber jNumber)
+                return (double)jNumber;
 
             throw new JSONConvertException("Not number type");
         }
 
         public static implicit operator string(JObject jObject)
         {
-            if (jObject.type == JType.String)
-            {
-                if (jObject is JString jString)
-                    return (string)jString;
-            }
+            if (jObject.type == JType.String && jObject is JString jString)
+                return (string)jString;
 
             return jObject.ToString();
         }
 
         public static implicit operator bool(JObject jObject)
         {
-            if (jObject.type == JType.Boolean)
-                if (jObject is JBoolean jBoolean)
-                    return (bool)jBoolean;
+            if (jObject.type == JType.Boolean && jObject is JBoolean jBoolean)
+                return (bool)jBoolean;
 
             throw new JSONConvertException("Not boolean type");
         }
 
         public static implicit operator List<JObject>(JObject jObject)
         {
-            if (jObject.type == JType.Array)
-                if (jObject is JArray jArray)
-                    return (List<JObject>)jArray;
+            if (jObject.type == JType.Array && jObject is JArray jArray)
+                return (List<JObject>)jArray;
 
             throw new JSONConvertException("Not array type");
+        }
+
+        private int FindKey(string key)
+        {
+            for (int i = 0; i < values.Count; i++)
+                if (values[i].key == key)
+                    return i;
+
+            return -1;
         }
 
         public static JObject Parse(string json, JAccess access = JAccess.All)
@@ -611,18 +596,25 @@ namespace UJSON
         {
             if (access == JAccess.Immutable) throw new JSONAccessException("It's Immutable");
 
-            if (value is int i)
-                this.value = i;
-            else if (value is long l)
-                this.value = l;
-            else if (value is double d)
-                this.value = d;
-            else if (value is float f)
-                this.value = f;
-            else if (value is JNumber jn)
-                this.value = jn;
-            else
-                throw new JSONConvertException("not equal type");
+            switch (value)
+            {
+                case int i:
+                    this.value = i;
+                    break;
+                case long l:
+                    this.value = l;
+                    break;
+                case float f:
+                    this.value = f;
+                    break;
+                case double d:
+                    this.value = d;
+                    break;
+                case JNumber j:
+                    this.value = j;
+                    break;
+                default: throw new JSONConvertException("not equal type");
+            }
 
             return this;
         }
@@ -762,26 +754,37 @@ namespace UJSON
 
         public override JObject Add(object value)
         {
-            if (value is double d)
-                values.Add(new JNumber(value: d, access: access));
-            else if (value is int i)
-                values.Add(new JNumber(value: i, access: access));
-            else if (value is long l)
-                values.Add(new JNumber(value: l, access: access));
-            else if (value is float f)
-                values.Add(new JNumber(value: f, access: access));
-            else if (value is string s)
-                values.Add(new JString(value: s, access: access));
-            else if (value is bool b)
-                values.Add(new JBoolean(value: b, access: access));
-            else if (value is null)
-                values.Add(new JNull(access: access));
-            else if (value is List<JObject> li)
-                values.Add(new JArray(values: li, access: access));
-            else if (value is JObject j)
-                values.Add(j);
-            else
-                values.Add(new JObject(access: access));
+            switch (value)
+            {
+                case int i:
+                    values.Add(new JNumber(value: i, access: access)); ;
+                    break;
+                case long l:
+                    values.Add(new JNumber(value: l, access: access));
+                    break;
+                case float f:
+                    values.Add(new JNumber(value: f, access: access));
+                    break;
+                case double d:
+                    values.Add(new JNumber(value: d, access: access));
+                    break;
+                case string s:
+                    values.Add(new JString(value: s, access: access));
+                    break;
+                case bool b:
+                    values.Add(new JBoolean(value: b, access: access));
+                    break;
+                case null:
+                    values.Add(new JNull(access: access));
+                    break;
+                case List<JObject> li:
+                    values.Add(new JArray(key, li, access));
+                    break;
+                case JObject j:
+                    values.Add(j);
+                    break;
+                default: throw new JSONTypeException("The type is not allowed.");
+            }
 
             return this;
         }
@@ -956,5 +959,4 @@ namespace UJSON
           System.Runtime.Serialization.SerializationInfo info,
           System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
-
 }
