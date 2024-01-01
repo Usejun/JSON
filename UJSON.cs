@@ -1,4 +1,8 @@
-public class TT
+using System;
+using System.Text;
+using System.Collections.Generic;
+
+namespace UJSON
 {
     public enum JType
     {
