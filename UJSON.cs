@@ -371,8 +371,12 @@ namespace UJSON
         public JObject Update(string key, object value)
         {
             if (access == JAccess.Immutable) throw new JSONAccessException("it's immutable");
-            if (type != JType.Object) this[key].Update(value);
-
+            if (type != JType.Object) 
+            {
+                this[key].Update(value);
+                return this;
+            }
+            
             switch (value)
             {
                 case int i:
