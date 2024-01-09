@@ -242,6 +242,7 @@ namespace UJSON
                         Add(strKey, value);
                     else if (index != -1)
                         Update(strKey, value);
+                    return;
                 }
                 else if (type == JType.Array && this is JArray jArray && key is int intKey)
                 {
