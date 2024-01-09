@@ -430,7 +430,7 @@ namespace UJSON
             return this;
         }
 
-        public virtual string ToJSON()
+        public virtual string ToText()
         {
             StringBuilder sb = new StringBuilder();
 
@@ -455,10 +455,10 @@ namespace UJSON
                     else if (jObj.type == JType.Array)
                     {
                         sb.Append($"\"{jObj.key}\": ");
-                        sb.Append(jObj.ToJSON(depth + 1));
+                        sb.Append(jObj.ToText(depth + 1));
                     }
                     else
-                        sb.Append(jObj.ToJSON());
+                        sb.Append(jObj.ToText());
 
                     if (i != jObject.values.Count - 1)
                         sb.Append(", ");
@@ -470,7 +470,7 @@ namespace UJSON
             }
         }
 
-        public virtual string ToJSON(int height)
+        public virtual string ToText(int height)
         {
             StringBuilder sb = new StringBuilder();
 
@@ -495,10 +495,10 @@ namespace UJSON
                     else if (jObj.type == JType.Array)
                     {
                         sb.Append($"\"{jObj.key}\": ");
-                        sb.Append(jObj.ToJSON(depth + 1));
+                        sb.Append(jObj.ToText(depth + 1));
                     }
                     else
-                        sb.Append(jObj.ToJSON());
+                        sb.Append(jObj.ToText());
 
                     if (i != jObject.values.Count - 1)
                         sb.Append(", ");
@@ -512,7 +512,7 @@ namespace UJSON
 
         public override string ToString()
         {
-            return ToJSON();
+            return ToText();
         }
 
         public static implicit operator int(JObject jObject)
@@ -627,15 +627,15 @@ namespace UJSON
             return this;
         }
 
-        public override string ToJSON()
+        public override string ToText()
         {
             if (string.IsNullOrEmpty(key)) return $"{value}";
             return $"\"{key}\": {value}";
         }
 
-        public override string ToJSON(int height)
+        public override string ToText(int height)
         {
-            return ToJSON();
+            return ToText();
         }
 
         public override string ToString()
@@ -677,15 +677,15 @@ namespace UJSON
             return this;
         }
 
-        public override string ToJSON()
+        public override string ToText()
         {
             if (string.IsNullOrEmpty(key)) return $"\"{value}\"";
             return $"\"{key}\": \"{value}\"";
         }
 
-        public override string ToJSON(int height)
+        public override string ToText(int height)
         {
-            return ToJSON();
+            return ToText();
         }
 
         public static implicit operator string(JString jString) => $"{jString.value}";
@@ -719,20 +719,20 @@ namespace UJSON
             return this;
         }
 
-        public override string ToJSON()
+        public override string ToText()
         {
             if (string.IsNullOrEmpty(key)) return value ? "true" : "false";
             return value ? $"\"{key}\": true" : $"\"{key}\": false";
         }
 
-        public override string ToJSON(int height)
+        public override string ToText(int height)
         {
-            return ToJSON();
+            return ToText();
         }
 
         public override string ToString()
         {
-            return ToJSON();
+            return ToText();
         }
 
         public static implicit operator bool(JBoolean jBoolean) => jBoolean.value;
@@ -804,7 +804,7 @@ namespace UJSON
             return false;
         }
 
-        public override string ToJSON()
+        public override string ToText()
         {
             StringBuilder sb = new StringBuilder();
 
@@ -815,7 +815,7 @@ namespace UJSON
                 sb.Append(' ', DEFAULTTEXTHEIGHT);
                 if (values[i].Type == JType.Object ||
                     values[i].Type == JType.Array)
-                    sb.Append(values[i].ToJSON(1));
+                    sb.Append(values[i].ToText(1));
                 if (i != values.Count - 1)
                     sb.Append(',');
                 sb.Append('\n');
@@ -826,7 +826,7 @@ namespace UJSON
             return sb.ToString();
         }
 
-        public override string ToJSON(int height)
+        public override string ToText(int height)
         {
             StringBuilder sb = new StringBuilder();
 
@@ -838,9 +838,9 @@ namespace UJSON
 
                 if (values[i].Type == JType.Object ||
                     values[i].Type == JType.Array)
-                    sb.Append(values[i].ToJSON(height + 1));
+                    sb.Append(values[i].ToText(height + 1));
                 else
-                    sb.Append(values[i].ToJSON());
+                    sb.Append(values[i].ToText());
 
                 if (i != values.Count - 1)
                     sb.Append(',');
@@ -856,7 +856,7 @@ namespace UJSON
 
         public override string ToString()
         {
-            return ToJSON();
+            return ToText();
         }
 
         public JObject this[int index]
@@ -891,14 +891,14 @@ namespace UJSON
             this.access = access;
         }
 
-        public override string ToJSON()
+        public override string ToText()
         {
             return $"\"{key}\": null";
         }
 
-        public override string ToJSON(int height)
+        public override string ToText(int height)
         {
-            return ToJSON();
+            return ToText();
         }
 
         public override string ToString()
