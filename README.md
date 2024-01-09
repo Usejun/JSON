@@ -37,10 +37,10 @@ int n = json["test"][0]; // -> 1
 ```
 
 ### 2. Convert JSON text
-ToJSON, a function of JObject, allows you to turn a JObject class back into JSON as a String.
+ToText, a function of JObject, allows you to turn a JObject class back into JSON as a String.
 
 ```
-Console.WriteLine(json.ToJSON());
+Console.WriteLine(json.ToText());
 /*
   {
     "name": "Usejun",
@@ -77,7 +77,7 @@ json.AddArray("what", 1, 2, 3, 4, 5, 6);
 json["what"].Add(7);
 json.AddObject("goods", ("book", "read"), ("computer", true));
 
-Console.WriteLine(json.ToJSON());
+Console.WriteLine(json.ToText());
 /*
   {
     "name": "Usejun",
@@ -139,7 +139,7 @@ json.Add("name", "Arthur Fleck")
     .Add("marital status", false)
     .Add("cool", true);
 
-Console.WriteLine(json.ToJSON());
+Console.WriteLine(json.ToText());
 /*
 {
   "name": "Arthur Fleck",
