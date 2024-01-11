@@ -843,6 +843,10 @@ namespace UJSON
                              break;
                      }
                  }
+
+                 values.Clear();
+                 foreach (var obj in list)
+                     values.Add(obj);
              }
                  
              return this;
