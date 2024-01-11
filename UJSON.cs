@@ -425,6 +425,10 @@ namespace UJSON
                     if (this is JBoolean jBoolean)
                         jBoolean.Update(value);
                     break;
+                case JType.Array:
+                    if (this is JArray jArray)
+                        jArray.Update(value);
+                    break;
                 default:
                     throw new JSONTypeException("Unable to update");
             }
@@ -798,6 +802,52 @@ namespace UJSON
             return this;
         }
 
+         public override JObject Update(object value)
+         {
+             if (access == JAccess.Immutable) throw new JSONAccessException("It's Immutable");
+        
+             List<JObject> list = new List<JObject>();
+        
+             if (value is IEnumerable<object> ie)
+             {
+                 foreach (var v in ie)
+                 {
+                     switch (v)
+                     {
+                         case int i:
+                             list.Add(new JNumber(value: i, access:access));
+                             break;
+                         case long l:
+                             list.Add(new JNumber(value: l, access: access));
+                             break;
+                         case float f:
+                             list.Add(new JNumber(value: f, access: access));
+                             break;
+                         case double d:
+                             list.Add(new JNumber(value: d, access: access));
+                             break;
+                         case string s:
+                             list.Add(new JString(value: s, access: access));
+                             break;
+                         case bool b:
+                             list.Add(new JBoolean(value: b, access: access));
+                             break;
+                         case null:
+                             list.Add(new JNull(access: access));
+                             break;
+                         case List<JObject> jl:
+                             list.Add(new JArray(values: jl, access: access));
+                             break;
+                         case JObject j:
+                             list.Add(j);
+                             break;
+                     }
+                 }
+             }
+                 
+             return this;
+         }
+
         private bool OutOfRange(int index)
         {
             if (index < 0 || index >= values.Count)
@@ -817,6 +867,9 @@ namespace UJSON
                 if (values[i].Type == JType.Object ||
                     values[i].Type == JType.Array)
                     sb.Append(values[i].ToText(1));
+                else
+                    sb.Append(values[i].ToText());
+                    
                 if (i != values.Count - 1)
                     sb.Append(',');
                 sb.Append('\n');
