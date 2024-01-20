@@ -65,7 +65,7 @@ JSON data is divided into six classes: JObject, JArray, JString, JNumber, JBoole
 ```
 string name = json["name"]; // -> Usejun
 int age = json["name"]; // -> 888
-List<int> test = json["test"]; // -> { 1, 2, 3 }
+List<JObject> test = json["test"]; // -> { 1, 2, 3 }
 ```
 
 ### 4. Simple data Editing
